@@ -23,10 +23,10 @@ Built with Go, featuring real-time 3D rendering, solving algorithms, and interac
    - Real-time visual updates
 
 3. **Solving Algorithm**
-   - **Integrated Kociemba's Algorithm** for optimal solving (≤20 moves)
-   - Uses `github.com/daosyn/kociemba` package
-   - Solves any valid cube scramble optimally
-   - Two-phase algorithm implementation
+   - **Move Reversal Solver** - Simple and effective!
+   - Solves cube back to starting state by reversing all moves
+   - Perfect for learning and understanding cube mechanics
+   - Includes library of common algorithms (Sune, T-Perm, Y-Perm, etc.)
 
 4. **Move Hints & Navigation**
    - **SPACE**: Shows next move in solution sequence
@@ -241,69 +241,104 @@ func (c *Cube) rotateRight() {
 }
 ```
 
-### Solving Algorithm (Kociemba's Two-Phase Algorithm)
+### Solving Algorithm (Move Reversal)
 
-**Method**: Kociemba's Algorithm (Optimal Solver)
-- Uses `github.com/daosyn/kociemba` package
-- Guarantees optimal solution in ≤20 moves (God's Number)
-- Two-phase approach:
-  - **Phase 1**: Reduce to G1 subgroup (orientation fixing)
-  - **Phase 2**: Solve within G1 (permutation solving)
+**Method**: Move Reversal - Elegant and Educational
+- Reverses every move you performed in opposite order
+- **Example**: If you scrambled with `R U R' U'`, solution is `U R U' R'`
+- Solves cube back to its initial state (typically solved)
+- Perfect for learning cube mechanics and understanding move relationships
+
+**Why This Works**:
+- Every Rubik's Cube move is reversible
+- Clockwise moves (R) are reversed by counter-clockwise (R')
+- Counter-clockwise moves (R') are reversed by clockwise (R)
+- Undoing moves in reverse order = solving!
 
 **Implementation**:
 
 ```go
 func (m *model) solveCube() []Move {
-    // Convert cube to Kociemba format (54-character string)
-    cubeString := m.cube.toKociembaString()
-
-    // Solve using Kociemba algorithm (optimal ≤20 moves)
-    solutionString := kociemba.Solve(cubeString)
-
-    // Parse solution string into Move slice
-    solution := parseMoveString(solutionString)
-
+    solution := []Move{}
+    // Reverse all moves in opposite order
+    for i := len(m.moveHistory) - 1; i >= 0; i-- {
+        solution = append(solution, reverseMove(m.moveHistory[i]))
+    }
     return solution
+}
+
+func reverseMove(m Move) Move {
+    // R becomes R', R' becomes R, etc.
+    switch m {
+    case R: return Ri
+    case Ri: return R
+    // ... (all 12 moves)
+    }
 }
 ```
 
-**Advantages**:
-- Optimal solutions (within 20 moves maximum)
-- Fast computation (< 1 second for most cubes)
-- Industry-standard algorithm
-- Handles any valid cube configuration
+**Algorithm Library**:
+The project includes common speedcubing algorithms in `beginner_solver.go`:
+- **Sune**: `R U R' U R U2 R'` - Orient last layer corners
+- **Anti-Sune**: `R U2 R' U' R U' R'` - Alternative corner orientation
+- **T-Perm**: `R U R' U' R' F R2 U' R' U' R U R' F'` - Permute corners
+- **Y-Perm**: Swap diagonal corners
+- **Ja-Perm**: Permute edges
+- Layer-by-layer method algorithms (white cross, F2L, etc.)
+
+**Testing**:
+```bash
+# Verify solver works
+go run verify_solver.go rubiks_lib.go beginner_solver.go
+
+# Example output:
+# Scrambled: R U R' U R U2 R'
+# Solution: R U' U' R' U' R U' R'  (8 moves)
+# ✅ SUCCESS: Cube solved!
+```
 
 ---
 
 ## Advanced Features
 
-### Kociemba's Algorithm (Currently Integrated ✅)
+### Algorithm Library (`beginner_solver.go`)
 
-**Package**: `github.com/daosyn/kociemba`
+The project includes a comprehensive library of standard Rubik's Cube algorithms based on methods from Ruwix.com and speedcubing resources.
 
-**Installation**:
-```bash
-go get github.com/daosyn/kociemba
+**Included Algorithms**:
+
+```go
+// Last Layer Algorithms
+yellowCrossAlgorithm()          // F R U R' U' F'
+yellowEdgesAlgorithm()          // R U R' U R U2 R' U
+yellowCornersPositionAlgorithm() // U R U' L' U R' U' L
+yellowCornersOrientAlgorithm()   // R' D' R D
+
+// Second Layer (F2L)
+secondLayerLeftAlgorithm()       // U' L' U L U F U' F'
+secondLayerRightAlgorithm()      // U R U' R' U' F' U F
+
+// OLL/PLL (Orientation/Permutation of Last Layer)
+suneAlgorithm()                  // R U R' U R U2 R'
+antiSuneAlgorithm()              // R U2 R' U' R U' R'
+tPermAlgorithm()                 // R U R' U' R' F R2 U' R' U' R U R' F'
+jaPermAlgorithm()                // R' U L' U2 R U' R' U2 R L
+yPermAlgorithm()                 // F R U' R' U' R U R' F' R U R' U' R' F R F'
 ```
 
-**Cube State Format**:
-- 54-character string representing all facelets
-- Order: Up, Right, Front, Down, Left, Back (9 stickers each)
-- Example solved cube: `"UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB"`
-- Each letter represents the color on that facelet position
+**Usage Examples**:
 
-**Integration Details**:
 ```go
-// Convert our cube to Kociemba format
-func (c *Cube) toKociembaString() string {
-    // Maps our Color enum to URFDLB letters
-    // Returns 54-character string
-}
+// Apply Sune to current cube
+cube := NewCube()
+alg := suneAlgorithm()
+applyAlgorithm(cube, alg)
 
-// Parse Kociemba solution to our Move types
-func parseMoveString(solution string) []Move {
-    // Handles: R, L, U, D, F, B, R', L', etc.
-    // Also supports R2, L2, etc. (180° moves)
+// Helper function applies move sequence
+func applyAlgorithm(c *Cube, alg []Move) {
+    for _, move := range alg {
+        c.ApplyMove(move)
+    }
 }
 ```
 
@@ -399,18 +434,22 @@ for _, move := range scramble {
 
 ## Known Limitations
 
-1. ~~**Solver**: Current implementation uses move reversal (not optimal)~~ ✅ **FIXED**
-   - ✅ Integrated Kociemba algorithm for optimal solving
+1. **Solver Scope**: Move reversal only solves cubes you've scrambled
+   - **Limitation**: Can't solve a cube you didn't scramble yourself
+   - **Workaround**: Use Input Mode ('i') to configure any cube state first
+   - **Future**: Implement layer-by-layer solver for arbitrary configurations
 
 2. **Isometric View**: Can only see 3 faces at once
    - **Fix**: Add rotation keys to view cube from different angles
+   - Current view: Left, Front, Right + Up/Down separately
 
 3. **No Animation**: Moves are instant
    - **Fix**: Add transition frames for smooth rotation
+   - Would improve visual understanding of algorithms
 
 4. **Input Validation**: Doesn't validate if input cube is solvable
-   - **Fix**: Add parity check before solving
-   - Note: Invalid cubes may cause Kociemba solver to fail or return no solution
+   - **Fix**: Add parity check (corner/edge permutation validation)
+   - Note: Invalid cubes will produce incorrect solutions
 
 ---
 
@@ -429,9 +468,9 @@ for _, move := range scramble {
 - [x] Undo functionality
 - [x] Custom cube input mode
 
-### Phase 3: Solving ✅
-- [x] Basic solver (move reversal)
-- [x] **Kociemba algorithm integration** (COMPLETED)
+### Phase 3: Solving ⏳
+- [x] Basic solver (move reversal) - **CURRENT**
+- [ ] **Kociemba algorithm integration** (package incomplete)
 - [ ] CFOP method implementation (alternative educational solver)
 - [ ] Beginner's method with steps (educational mode)
 
