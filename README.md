@@ -1,8 +1,8 @@
 # 🧊 Rubik's Cube Solver - Terminal Edition
 
-**Isometric 3D ASCII Rubik's Cube with Bubble Tea & Lip Gloss**
+**3D Perspective ASCII Rubik's Cube with Optimal Solving**
 
-Built with Go, featuring real-time 3D rendering, solving algorithms, and interactive controls.
+Built with Go and Python, featuring real-time 3D perspective rendering, Kociemba's optimal solving algorithm (≤20 moves), and interactive controls.
 
 ---
 
@@ -10,11 +10,13 @@ Built with Go, featuring real-time 3D rendering, solving algorithms, and interac
 
 ### ✅ Implemented
 
-1. **Isometric 3D Rendering**
-   - Beautiful ASCII cube visualization
-   - Shows 3 visible faces simultaneously (Front, Left, Right)
-   - Top and Bottom faces displayed separately
+1. **Dual Rendering Modes**
+   - **3D Perspective View**: Isometric cube with depth and shading (inspired by Stack Overflow design)
+   - **Isometric Flat View**: Classic side-by-side face layout
+   - Toggle between views with 't' key
+   - Shows 3 visible faces simultaneously (Top, Left, Right)
    - Color-coded squares with Lip Gloss styling
+   - 'x' characters for borders and depth perception
 
 2. **Interactive Controls**
    - Full cube manipulation with keyboard
@@ -22,10 +24,14 @@ Built with Go, featuring real-time 3D rendering, solving algorithms, and interac
    - Prime moves (R', L', etc.) for counter-clockwise rotations
    - Real-time visual updates
 
-3. **Solving Algorithm**
-   - **Move Reversal Solver** - Simple and effective!
-   - Solves cube back to starting state by reversing all moves
-   - Perfect for learning and understanding cube mechanics
+3. **Dual Solving Algorithms**
+   - **Kociemba's Algorithm** (Primary) - Optimal solutions in ≤20 moves!
+     - Uses Python's `kociemba` package via subprocess
+     - Guarantees optimal or near-optimal solutions
+     - Fast computation (< 1 second for most cubes)
+   - **Move Reversal** (Fallback) - Simple and educational
+     - Solves cube back to starting state by reversing all moves
+     - Perfect for learning cube mechanics
    - Includes library of common algorithms (Sune, T-Perm, Y-Perm, etc.)
 
 4. **Move Hints & Navigation**
@@ -44,16 +50,32 @@ Built with Go, featuring real-time 3D rendering, solving algorithms, and interac
 
 ## Installation
 
-```bash
-# Navigate to directory
-cd /Users/michaellavery/github/centipede
+### Prerequisites
+- Go 1.18 or later
+- Python 3.7 or later
+- Terminal with color support (120×40 recommended)
 
-# Build the cube solver
-go build -o rubiks_cube rubiks_cube.go
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/michaellavery-grp/rubiks-cube-solver.git
+cd rubiks-cube-solver
+
+# Set up Python virtual environment for Kociemba
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install kociemba
+deactivate
+
+# Build the Go application
+go build -o rubiks_cube rubiks_cube.go beginner_solver.go render_3d.go kociemba_wrapper.go
 
 # Run it!
 ./rubiks_cube
 ```
+
+**Note**: The application will automatically use the Python virtual environment for optimal solving. If the venv is not available, it falls back to move reversal.
 
 ---
 
@@ -80,9 +102,10 @@ go build -o rubiks_cube rubiks_cube.go
 
 | Key | Action | Description |
 |-----|--------|-------------|
-| `s` | Solve Mode | Calculate and display solution |
+| `s` | Solve Mode | Calculate optimal solution with Kociemba |
 | `i` | Input Mode | Enter custom cube configuration |
 | `v` | View Mode | Return to viewing mode |
+| `t` | Toggle View | Switch between 3D perspective and isometric |
 | `Space` | Next Move | Execute next move in solution |
 | `Enter` | Undo Move | Reverse last move |
 | `q` | Quit | Exit program |

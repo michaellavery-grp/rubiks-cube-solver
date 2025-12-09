@@ -14,5 +14,10 @@ rubiks_cube
 # Go workspace file
 go.work
 
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+
 # macOS
 .DS_Store

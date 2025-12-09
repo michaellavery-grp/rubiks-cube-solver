@@ -285,6 +285,7 @@ type model struct {
 	inputColor  Color
 	moveHistory []Move
 	message     string
+	render3D    bool // true = 3D perspective, false = isometric flat
 }
 
 func initialModel() model {
@@ -294,8 +295,9 @@ func initialModel() model {
 	return model{
 		cube:        cube,
 		mode:        "view",
+		render3D:    true, // Start with 3D perspective view
 		currentMove: 0,
-		message:     "Scrambled cube - Press 's' to solve, 'i' to input custom cube, arrows to rotate",
+		message:     "Scrambled cube - Press 's' to solve, '3' to toggle view, arrows to rotate",
 	}
 }
 
@@ -327,6 +329,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "v":
 			m.mode = "view"
 			m.message = "View Mode"
+
+		case "t":
+			// Toggle 3D/isometric view
+			m.render3D = !m.render3D
+			if m.render3D {
+				m.message = "3D Perspective View"
+			} else {
+				m.message = "Isometric Flat View"
+			}
 
 		case " ":
 			// Next move in solution
@@ -570,19 +581,26 @@ func parseMoveString(solution string) []Move {
 	return moves
 }
 
-// solveCube uses move reversal for solving
-// This solves the cube back to its starting state by reversing all moves
-// Works perfectly if you scrambled from a solved cube
+// solveCube uses Kociemba's algorithm for optimal solving
+// Falls back to move reversal if Kociemba fails
 func (m *model) solveCube() []Move {
-	// Move reversal: reverse all moves in opposite order
-	solution := []Move{}
+	// Try Kociemba first for optimal solution
+	solution, err := m.SolveWithKociemba()
+	if err == nil && len(solution) > 0 {
+		m.message = fmt.Sprintf("Kociemba solution: %d moves (optimal!)", len(solution))
+		return solution
+	}
+
+	// Fallback to move reversal if Kociemba fails
+	solution = []Move{}
 	for i := len(m.moveHistory) - 1; i >= 0; i-- {
 		solution = append(solution, reverseMove(m.moveHistory[i]))
 	}
 
 	if len(solution) == 0 {
-		// Cube hasn't been scrambled, suggest some moves
 		m.message = "Cube not scrambled yet. Try some moves (r, u, f, etc.) then press 's' to solve!"
+	} else {
+		m.message = fmt.Sprintf("Move reversal solution: %d moves", len(solution))
 	}
 
 	return solution
@@ -598,14 +616,18 @@ func (m model) View() string {
 		Render("🧊 RUBIK'S CUBE SOLVER 🧊")
 	s.WriteString(title + "\n\n")
 
-	// Render isometric cube
-	s.WriteString(m.renderIsometricCube())
+	// Render cube (3D perspective or isometric)
+	if m.render3D {
+		s.WriteString(m.render3DCube())
+	} else {
+		s.WriteString(m.renderIsometricCube())
+	}
 	s.WriteString("\n\n")
 
 	// Controls
 	controls := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(
 		"[r/R] Right  [l/L] Left  [u/U] Up  [d/D] Down  [f/F] Front  [b/B] Back\n" +
-		"[s] Solve  [i] Input Cube  [Space] Next Move  [Enter] Undo  [q] Quit")
+		"[s] Solve  [i] Input  [t] Toggle View  [Space] Next  [Enter] Undo  [q] Quit")
 	s.WriteString(controls + "\n\n")
 
 	// Status message
