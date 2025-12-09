@@ -147,20 +147,12 @@ func (m model) render3DCube() string {
 
 // getColorChar returns the character to use for each color
 func (m model) getColorChar(c Color) rune {
-	switch c {
-	case White:
-		return 'w'
-	case Red:
-		return 'r'
-	case Blue:
-		return 'b'
-	case Orange:
-		return 'o'
-	case Green:
-		return 'g'
-	case Yellow:
-		return 'y'
-	default:
-		return ' '
-	}
+	// Return space - we'll use background color instead of letters
+	return ' '
+}
+
+// getColoredBlock returns a colored space character (visible as solid color)
+func (m model) getColoredBlock(c Color) string {
+	style := m.getColorStyle(c)
+	return style.Render(" ")
 }
